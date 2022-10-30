@@ -45,7 +45,7 @@ class Home extends StatelessWidget {
                   streamBTC.listen((event) {
                     print('-----------------------------------------------');
                     print(collectorBTC.kListShort.last);
-                    // print(collectorBTC.kListMed.last);
+                    // print(collectorBTC.kListMed.la st);
                     // print(collectorBTC.kListLong.last);
                     btcstring(collectorBTC.kListShort.last.toString());
                     _iv.setPrice(collectorBTC.kListShort.last.close.toString());
