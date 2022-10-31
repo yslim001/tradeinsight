@@ -19,7 +19,7 @@ class Collector {
   static const int medTerm = 60 * 15;
   static const int longTerm = 60 * 60;
   final int precision;
-  final int _monitorDuration = 60;
+  final int _monitorDuration = 600;
   late WebSocketChannel _channel;
 
   late Timer _fetchTimer;
@@ -70,13 +70,17 @@ class Collector {
 
       fillData(jdata);
 
-      if (_trList.isEmpty || kListShort == null || kListMed == null) {
+      if (_trList.isEmpty ||
+          kListShort == null ||
+          kListMed == null ||
+          kListLong == null) {
         return null;
       }
       CoinInfo ds = CoinInfo(symbol: symbol)
         ..symbol = symbol
         ..kListShort = kListShort
         ..kListMed = kListMed
+        ..kListLong = kListLong
         ..trList = _trList
         ..ordbookInfo = _ordbookInfo;
 
