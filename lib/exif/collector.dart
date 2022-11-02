@@ -19,10 +19,10 @@ class Collector {
   static const int medTerm = 60 * 15;
   static const int longTerm = 60 * 60;
   final int precision;
-  final int _monitorDuration = 600;
+  final int _monitorDuration = 3600;
   late WebSocketChannel _channel;
 
-  late Timer _fetchTimer;
+  bool bRunning = false;
 
   int count = 0;
   double slotVol1m = 0;
@@ -40,16 +40,22 @@ class Collector {
   Collector({required this.symbol, required this.precision});
 
   Stream<CoinInfo?> run() async* {
-    print('Target:$symbol');
+    print('Target: $symbol');
+    bRunning = true;
     _klineSymbol = '${symbol.toLowerCase()}@kline_1m';
     _tradeSymbol = '${symbol.toLowerCase()}@aggTrade';
 
     kListShort = await BNCF.getKline(symbol, shortTerm);
     kListMed = await BNCF.getKline(symbol, medTerm);
     kListLong = await BNCF.getKline(symbol, longTerm);
-    _fetchTimer = Timer.periodic(
+    Timer.periodic(
         Duration(milliseconds: 500 * (shortTerm + Random().nextInt(20))),
         (Timer t) async {
+      print('Timer Expiry! Running:$bRunning');
+      if (!bRunning) {
+        t.cancel();
+        return;
+      }
       kListMed = await BNCF.getKline(symbol, medTerm);
       kListLong = await BNCF.getKline(symbol, longTerm);
       DataUtil.calculate(kListMed);
@@ -70,10 +76,7 @@ class Collector {
 
       fillData(jdata);
 
-      if (_trList.isEmpty ||
-          kListShort == null ||
-          kListMed == null ||
-          kListLong == null) {
+      if (_trList.isEmpty) {
         return null;
       }
       CoinInfo ds = CoinInfo(symbol: symbol)
@@ -91,7 +94,7 @@ class Collector {
 
   void stop() {
     _channel.sink.close();
-    _fetchTimer.cancel();
+    bRunning = false;
   }
 
   void fillData(Map<String, dynamic> streamData) {

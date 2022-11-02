@@ -121,7 +121,7 @@ class BNCF {
     List<KLineEntity> datas = [];
     Uri turl = Uri.parse(url);
     Response response = await http.get(turl);
-    print(response);
+    // print('Kline ${response.statusCode}');
     if (response.statusCode == 200) {
       List list = json.decode(response.body);
       double o, h, l, c, v, v2;
@@ -145,7 +145,7 @@ class BNCF {
       });
 
       DataUtil.calculate(datas);
-      print(datas.last);
+      print('Kline:$interval:${datas.last}');
     } else {
       print('${url}\nFailed getting IP address rescode:$response');
       print('Failed getting IP address${response.reasonPhrase}');
