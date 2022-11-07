@@ -6,6 +6,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../entity/coininfo.dart';
 import '../entity/k_line_entity.dart';
+import '../models/global.dart';
 import '../utils/calcutil.dart';
 import '../utils/data_util.dart';
 import '../exif/exapi.dart';
@@ -39,7 +40,7 @@ class Collector {
 
   Collector({required this.symbol, required this.precision});
 
-  Stream<CoinInfo?> run() async* {
+  Stream<MarketInfo?> run() async* {
     print('Target: $symbol');
     bRunning = true;
     _klineSymbol = '${symbol.toLowerCase()}@kline_1m';
@@ -79,7 +80,7 @@ class Collector {
       if (_trList.isEmpty) {
         return null;
       }
-      CoinInfo ds = CoinInfo(symbol: symbol)
+      MarketInfo ds = MarketInfo(symbol: symbol)
         ..symbol = symbol
         ..kListShort = kListShort
         ..kListMed = kListMed

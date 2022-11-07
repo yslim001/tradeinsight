@@ -25,16 +25,3 @@ class TradeInfo {
     return '${DateFormat('HHmmss:SSS').format(DateTime.fromMillisecondsSinceEpoch(time))},${buy ? 'B' : 'S'},$price,${vol.toStringAsFixed(2)}';
   }
 }
-
-class CoinInfo {
-  late String symbol;
-  List<KLineEntity>? kListShort;
-  List<KLineEntity>? kListMed;
-  List<KLineEntity>? kListLong;
-  OrderBookInfo? ordbookInfo;
-  List<TradeInfo>? trList;
-
-  CoinInfo({required String symbol}) {
-    symbol = symbol;
-  }
-}

@@ -4,6 +4,7 @@ import 'package:tradeinsight/exif/collector.dart';
 import 'package:tradeinsight/veiws/charttable.dart';
 
 import 'entity/coininfo.dart';
+import 'entity/k_line_entity.dart';
 import 'exif/exapi.dart';
 import 'models/global.dart';
 import 'utils/strutil.dart';
@@ -15,7 +16,7 @@ class Home extends StatelessWidget {
   var string = ''.obs;
   var btcstring = ''.obs;
   var monitoring = true.obs;
-  var normalize = true.obs;
+  var normalize = false.obs;
   var collectorBTC = Collector(symbol: 'btcusdt', precision: 2);
   var collectorBCH = Collector(symbol: 'bchusdt', precision: 2);
   var collectorETH = Collector(symbol: 'ethusdt', precision: 2);
@@ -41,34 +42,38 @@ class Home extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      StreamBuilder<CoinInfo?>(
+                      StreamBuilder<MarketInfo?>(
                           stream: collectorBTC.run(),
                           builder: (context, snapshot) {
-                            return insightView(G.btc = snapshot.data);
+                            G.btc.m = snapshot.data;
+                            return insightView(G.btc);
                           }),
                       const Divider(
                         thickness: 4,
                       ),
-                      StreamBuilder<CoinInfo?>(
+                      StreamBuilder<MarketInfo?>(
                           stream: collectorETH.run(),
                           builder: (context, snapshot) {
-                            return insightView(G.eth = snapshot.data);
+                            G.eth.m = snapshot.data;
+                            return insightView(G.eth);
                           }),
                       const Divider(
                         thickness: 4,
                       ),
-                      StreamBuilder<CoinInfo?>(
+                      StreamBuilder<MarketInfo?>(
                           stream: collectorBCH.run(),
                           builder: (context, snapshot) {
-                            return insightView(G.bch = snapshot.data);
+                            G.bch.m = snapshot.data;
+                            return insightView(G.bch);
                           }),
                       const Divider(
                         thickness: 4,
                       ),
-                      StreamBuilder<CoinInfo?>(
+                      StreamBuilder<MarketInfo?>(
                           stream: collectorETC.run(),
                           builder: (context, snapshot) {
-                            return insightView(G.etc = snapshot.data);
+                            G.etc.m = snapshot.data;
+                            return insightView(G.etc);
                           }),
                       TextButton(
                           onPressed: () async {
@@ -97,16 +102,59 @@ class Home extends StatelessWidget {
 
   Widget insightView(CoinInfo? k) {
     if (k == null) return const Text('Waiting...');
-    return Column(children: [kdjRow(k), macdRow(k)]);
+    return Column(children: [tradeRow(k), kdjRow(k.m), macdRow(k.m)]);
   }
 
-  Widget kdjRow(CoinInfo? k) {
+  Widget tradeRow(CoinInfo? k) {
+    if (k!.m == null) return const Text('Waiting...');
+    MarketInfo mi = k.m as MarketInfo;
+    return Row(
+      children: [
+        Text(k.m!.symbol.toUpperCase().replaceFirst('USDT', ' ')),
+        k.position.p == 0
+            ? Row(children: [
+                TextButton(
+                    onPressed: () {
+                      k.position.p = mi.kListShort!.last.close;
+                      k.position.buy = true;
+                    },
+                    child: Text(
+                      'BUY',
+                      style: TextStyle(backgroundColor: Colors.green),
+                    )),
+                TextButton(
+                    onPressed: () {
+                      k.position.p = mi.kListShort!.last.close;
+                      k.position.buy = false;
+                    },
+                    child: Text('SELL',
+                        style: TextStyle(backgroundColor: Colors.red)))
+              ])
+            : Row(children: [
+                Text(U.pr(k.position.p),
+                    style: TextStyle(
+                        backgroundColor:
+                            k.position.buy ? Colors.green : Colors.red)),
+                TextButton(
+                    onPressed: () {
+                      k.position.p = 0;
+                    },
+                    child: Text(' Close',
+                        style: TextStyle(backgroundColor: Colors.grey)))
+              ]),
+        Text(k.position.p == 0
+            ? ''
+            : '  ${k.position.buy ? ((mi.kListShort!.last.close - k.position.p) * 100 / k.position.p).toStringAsFixed(2) : ((k.position.p - mi.kListShort!.last.close) * 100 / k.position.p).toStringAsFixed(2)}')
+      ],
+    );
+  }
+
+  Widget kdjRow(MarketInfo? k) {
     if (k == null) return const Text('Waiting...');
     return Row(
       children: [
-        Text(k.symbol.toUpperCase().replaceFirst('USDT', '')),
         pV(k.kListShort!.last.close),
-        const Text(' S'),
+        const Text('KDJ S'),
         vV(k.kListShort!.last.j!),
         const Text(' M'),
         vV(k.kListMed!.last.j!),
@@ -116,98 +164,33 @@ class Home extends StatelessWidget {
     );
   }
 
-  Widget macdRow(CoinInfo? k) {
+  Widget macd1Row(List<KLineEntity> e) {
+    int len = e.length;
+    double basePrice = normalize.value ? 1000 / e.last.close : 1;
+    return Row(
+      children: [
+        vV2(e[len - 6].macd! * basePrice,
+            (e[len - 6].macd! - e[len - 7].macd!) * 100 / e[len - 6].macd!),
+        vV2(e[len - 5].macd! * basePrice,
+            (e[len - 5].macd! - e[len - 6].macd!) * 100 / e[len - 5].macd!),
+        vV2(e[len - 4].macd! * basePrice,
+            (e[len - 4].macd! - e[len - 5].macd!) * 100 / e[len - 5].macd!),
+        vV2(e[len - 3].macd! * basePrice,
+            (e[len - 3].macd! - e[len - 4].macd!) * 100 / e[len - 3].macd!),
+        vV2(e[len - 2].macd! * basePrice,
+            (e[len - 2].macd! - e[len - 3].macd!) * 100 / e[len - 2].macd!),
+        vV2(e[len - 1].macd! * basePrice,
+            (e[len - 1].macd! - e[len - 2].macd!) * 100 / e[len - 1].macd!),
+      ],
+    );
+  }
+
+  Widget macdRow(MarketInfo? k) {
     if (k == null) return const Text('Waiting...');
-    int len = k.kListShort!.length;
-    double basePrice = normalize.value ? 1000 / k.kListShort!.last.close : 1;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(
-        children: [
-          vV2(
-              k.kListShort![len - 5].macd! * basePrice,
-              (k.kListShort![len - 5].macd! - k.kListShort![len - 6].macd!) *
-                  100 /
-                  k.kListShort![len - 5].macd!),
-          vV2(
-              k.kListShort![len - 4].macd! * basePrice,
-              (k.kListShort![len - 4].macd! - k.kListShort![len - 5].macd!) *
-                  100 /
-                  k.kListShort![len - 5].macd!),
-          vV2(
-              k.kListShort![len - 3].macd! * basePrice,
-              (k.kListShort![len - 3].macd! - k.kListShort![len - 4].macd!) *
-                  100 /
-                  k.kListShort![len - 3].macd!),
-          vV2(
-              k.kListShort![len - 2].macd! * basePrice,
-              (k.kListShort![len - 2].macd! - k.kListShort![len - 3].macd!) *
-                  100 /
-                  k.kListShort![len - 2].macd!),
-          vV2(
-              k.kListShort![len - 1].macd! * basePrice,
-              (k.kListShort![len - 1].macd! - k.kListShort![len - 2].macd!) *
-                  100 /
-                  k.kListShort![len - 1].macd!),
-        ],
-      ),
-      Row(
-        children: [
-          vV2(
-              k.kListMed![len - 5].macd! * basePrice,
-              (k.kListMed![len - 5].macd! - k.kListMed![len - 6].macd!) *
-                  100 /
-                  k.kListMed![len - 5].macd!),
-          vV2(
-              k.kListMed![len - 4].macd! * basePrice,
-              (k.kListMed![len - 4].macd! - k.kListMed![len - 5].macd!) *
-                  100 /
-                  k.kListMed![len - 5].macd!),
-          vV2(
-              k.kListMed![len - 3].macd! * basePrice,
-              (k.kListMed![len - 3].macd! - k.kListMed![len - 4].macd!) *
-                  100 /
-                  k.kListMed![len - 3].macd!),
-          vV2(
-              k.kListMed![len - 2].macd! * basePrice,
-              (k.kListMed![len - 2].macd! - k.kListMed![len - 3].macd!) *
-                  100 /
-                  k.kListMed![len - 2].macd!),
-          vV2(
-              k.kListMed![len - 1].macd! * basePrice,
-              (k.kListMed![len - 1].macd! - k.kListMed![len - 2].macd!) *
-                  100 /
-                  k.kListMed![len - 1].macd!),
-        ],
-      ),
-      Row(
-        children: [
-          vV2(
-              k.kListLong![len - 5].macd! * basePrice,
-              (k.kListLong![len - 5].macd! - k.kListLong![len - 6].macd!) *
-                  100 /
-                  k.kListLong![len - 5].macd!),
-          vV2(
-              k.kListLong![len - 4].macd! * basePrice,
-              (k.kListLong![len - 4].macd! - k.kListLong![len - 5].macd!) *
-                  100 /
-                  k.kListLong![len - 5].macd!),
-          vV2(
-              k.kListLong![len - 3].macd! * basePrice,
-              (k.kListLong![len - 3].macd! - k.kListLong![len - 4].macd!) *
-                  100 /
-                  k.kListLong![len - 3].macd!),
-          vV2(
-              k.kListLong![len - 2].macd! * basePrice,
-              (k.kListLong![len - 2].macd! - k.kListLong![len - 3].macd!) *
-                  100 /
-                  k.kListLong![len - 2].macd!),
-          vV2(
-              k.kListLong![len - 1].macd! * basePrice,
-              (k.kListLong![len - 1].macd! - k.kListLong![len - 2].macd!) *
-                  100 /
-                  k.kListLong![len - 1].macd!),
-        ],
-      )
+      macd1Row(k.kListShort!),
+      macd1Row(k.kListMed!),
+      macd1Row(k.kListLong!),
     ]);
   }
 
