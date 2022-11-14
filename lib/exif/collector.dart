@@ -16,9 +16,6 @@ import '../exif/exapi.dart';
 class Collector {
   final String symbol;
   static const int TIMEWINDOW = 200;
-  static const int shortTerm = 60;
-  static const int medTerm = 60 * 15;
-  static const int longTerm = 60 * 60;
   final int precision;
   final int _monitorDuration = 3600;
   late WebSocketChannel _channel;
@@ -46,19 +43,19 @@ class Collector {
     _klineSymbol = '${symbol.toLowerCase()}@kline_1m';
     _tradeSymbol = '${symbol.toLowerCase()}@aggTrade';
 
-    kListShort = await BNCF.getKline(symbol, shortTerm);
-    kListMed = await BNCF.getKline(symbol, medTerm);
-    kListLong = await BNCF.getKline(symbol, longTerm);
+    kListShort = await BNCF.getKline(symbol, Config.SHORT);
+    kListMed = await BNCF.getKline(symbol, Config.MED);
+    kListLong = await BNCF.getKline(symbol, Config.LONG);
     Timer.periodic(
-        Duration(milliseconds: 500 * (shortTerm + Random().nextInt(20))),
+        Duration(milliseconds: 500 * (Config.SHORT + Random().nextInt(20))),
         (Timer t) async {
       print('Timer Expiry! Running:$bRunning');
       if (!bRunning) {
         t.cancel();
         return;
       }
-      kListMed = await BNCF.getKline(symbol, medTerm);
-      kListLong = await BNCF.getKline(symbol, longTerm);
+      kListMed = await BNCF.getKline(symbol, Config.MED);
+      kListLong = await BNCF.getKline(symbol, Config.LONG);
       DataUtil.calculate(kListMed);
       DataUtil.calculate(kListLong);
     });

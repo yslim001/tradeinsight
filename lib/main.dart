@@ -6,7 +6,9 @@ import 'package:tradeinsight/veiws/charttable.dart';
 import 'entity/coininfo.dart';
 import 'entity/k_line_entity.dart';
 import 'exif/exapi.dart';
+import 'exif/tradeapi.dart';
 import 'models/global.dart';
+import 'src/algo.dart';
 import 'utils/strutil.dart';
 
 void main() => runApp(MaterialApp(home: Home()));
@@ -35,7 +37,12 @@ class Home extends StatelessWidget {
                           onPressed: () async {
                             monitoring.value = !monitoring.value;
                           },
-                          child: const Text('토글 API'))
+                          child: const Text('토글 API')),
+                      TextButton(
+                          onPressed: () {
+                            Trade.test();
+                          },
+                          child: const Text('트레이드 API'))
                     ])
               : SingleChildScrollView(
                   child: Column(
@@ -55,6 +62,8 @@ class Home extends StatelessWidget {
                           stream: collectorETH.run(),
                           builder: (context, snapshot) {
                             G.eth.m = snapshot.data;
+                            if (G.eth.m != null) var score = Algo.calculate();
+
                             return insightView(G.eth);
                           }),
                       const Divider(
@@ -63,8 +72,8 @@ class Home extends StatelessWidget {
                       StreamBuilder<MarketInfo?>(
                           stream: collectorBCH.run(),
                           builder: (context, snapshot) {
-                            G.bch.m = snapshot.data;
-                            return insightView(G.bch);
+                            G.btc1.m = snapshot.data;
+                            return insightView(G.btc1);
                           }),
                       const Divider(
                         thickness: 4,
@@ -72,8 +81,8 @@ class Home extends StatelessWidget {
                       StreamBuilder<MarketInfo?>(
                           stream: collectorETC.run(),
                           builder: (context, snapshot) {
-                            G.etc.m = snapshot.data;
-                            return insightView(G.etc);
+                            G.eth1.m = snapshot.data;
+                            return insightView(G.eth1);
                           }),
                       TextButton(
                           onPressed: () async {
@@ -105,18 +114,19 @@ class Home extends StatelessWidget {
     return Column(children: [tradeRow(k), kdjRow(k.m), macdRow(k.m)]);
   }
 
-  Widget tradeRow(CoinInfo? k) {
-    if (k!.m == null) return const Text('Waiting...');
-    MarketInfo mi = k.m as MarketInfo;
+  Widget tradeRow(CoinInfo? traget) {
+    if (traget!.m == null) return const Text('Waiting...');
+    MarketInfo mi = traget.m as MarketInfo;
     return Row(
       children: [
-        Text(k.m!.symbol.toUpperCase().replaceFirst('USDT', ' ')),
-        k.position.p == 0
+        Text(traget.m!.symbol.toUpperCase().replaceFirst('USDT', ' ')),
+        traget.position.p == 0
             ? Row(children: [
                 TextButton(
                     onPressed: () {
-                      k.position.p = mi.kListShort!.last.close;
-                      k.position.buy = true;
+                      traget.position.p = mi.kListShort!.last.close;
+                      traget.position.buy = true;
+                      traget.position.t = DateTime.now();
                     },
                     child: Text(
                       'BUY',
@@ -124,27 +134,28 @@ class Home extends StatelessWidget {
                     )),
                 TextButton(
                     onPressed: () {
-                      k.position.p = mi.kListShort!.last.close;
-                      k.position.buy = false;
+                      traget.position.p = mi.kListShort!.last.close;
+                      traget.position.buy = false;
+                      traget.position.t = DateTime.now();
                     },
                     child: Text('SELL',
                         style: TextStyle(backgroundColor: Colors.red)))
               ])
             : Row(children: [
-                Text(U.pr(k.position.p),
+                Text(U.pr(traget.position.p),
                     style: TextStyle(
                         backgroundColor:
-                            k.position.buy ? Colors.green : Colors.red)),
+                            traget.position.buy ? Colors.green : Colors.red)),
                 TextButton(
                     onPressed: () {
-                      k.position.p = 0;
+                      traget.position.p = 0;
                     },
                     child: Text(' Close',
                         style: TextStyle(backgroundColor: Colors.grey)))
               ]),
-        Text(k.position.p == 0
+        Text(traget.position.p == 0
             ? ''
-            : '  ${k.position.buy ? ((mi.kListShort!.last.close - k.position.p) * 100 / k.position.p).toStringAsFixed(2) : ((k.position.p - mi.kListShort!.last.close) * 100 / k.position.p).toStringAsFixed(2)}')
+            : '  ${traget.position.buy ? ((mi.kListShort!.last.close - traget.position.p) * 100 / traget.position.p).toStringAsFixed(2) : ((traget.position.p - mi.kListShort!.last.close) * 100 / traget.position.p).toStringAsFixed(2)}')
       ],
     );
   }

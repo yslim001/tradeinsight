@@ -4,7 +4,7 @@ import 'rsi_entity.dart';
 import 'rw_entity.dart';
 
 mixin MACDEntity on KDJEntity, RSIEntity, WREntity, CCIEntity {
-  double? dea;
-  double? dif;
-  double? macd;
+  double dea = 0;
+  double dif = 0;
+  double macd = 0;
 }
