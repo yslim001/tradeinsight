@@ -49,7 +49,7 @@ class Collector {
     Timer.periodic(
         Duration(milliseconds: 500 * (Config.SHORT + Random().nextInt(20))),
         (Timer t) async {
-      print('Timer Expiry! Running:$bRunning');
+      // print('Timer Expiry! Running:$bRunning');
       if (!bRunning) {
         t.cancel();
         return;

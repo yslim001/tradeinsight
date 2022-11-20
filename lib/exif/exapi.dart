@@ -145,7 +145,7 @@ class BNCF {
       });
 
       DataUtil.calculate(datas);
-      print('Kline:$interval:${datas.last}');
+      // print('Kline:$interval:${datas.last}');
     } else {
       print('${url}\nFailed getting IP address rescode:$response');
       print('Failed getting IP address${response.reasonPhrase}');

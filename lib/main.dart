@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:tradeinsight/exif/collector.dart';
+import 'package:tradeinsight/src/algorithm.dart';
 import 'package:tradeinsight/veiws/charttable.dart';
 
 import 'entity/coininfo.dart';
@@ -8,234 +10,195 @@ import 'entity/k_line_entity.dart';
 import 'exif/exapi.dart';
 import 'exif/tradeapi.dart';
 import 'models/global.dart';
-import 'src/algo.dart';
+import 'src/algo1.dart';
 import 'utils/strutil.dart';
 
-void main() => runApp(MaterialApp(home: Home()));
+var collectorBTC = Collector(symbol: 'btcusdt', precision: 2);
+var collectorETH = Collector(symbol: 'ethusdt', precision: 2);
+var collectorCoins = <Collector>[];
 
-class Home extends StatelessWidget {
-  var count = 0.obs;
-  var string = ''.obs;
-  var btcstring = ''.obs;
-  var monitoring = true.obs;
-  var normalize = false.obs;
-  var collectorBTC = Collector(symbol: 'btcusdt', precision: 2);
-  var collectorBCH = Collector(symbol: 'bchusdt', precision: 2);
-  var collectorETH = Collector(symbol: 'ethusdt', precision: 2);
-  var collectorETC = Collector(symbol: 'etcusdt', precision: 2);
+void main() {
+  M();
+  AlgoMngr();
+  for (int i = 0; i < M.targets.length; ++i) {
+    collectorCoins.add(Collector(symbol: M.targets[i].symbol, precision: 2));
+  }
+  runApp(MaterialApp(home: Home2()));
+}
+
+class Home2 extends StatelessWidget {
+  var bRunning = false.obs;
+  var btcPrice = '1111'.obs;
+  var calcScore = '1111'.obs;
+  var tmpList = <Overview>[].obs;
   @override
-  Widget build(context) => Scaffold(
-      body: Center(
-        child: Obx(() {
-          return !monitoring.value
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                      const Text('Waiting....'),
-                      TextButton(
-                          onPressed: () async {
-                            monitoring.value = !monitoring.value;
-                          },
-                          child: const Text('토글 API')),
-                      TextButton(
-                          onPressed: () {
-                            Trade.test();
-                          },
-                          child: const Text('트레이드 API'))
-                    ])
-              : SingleChildScrollView(
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                      StreamBuilder<MarketInfo?>(
-                          stream: collectorBTC.run(),
-                          builder: (context, snapshot) {
-                            G.btc.m = snapshot.data;
-                            return insightView(G.btc);
-                          }),
-                      const Divider(
-                        thickness: 4,
-                      ),
-                      StreamBuilder<MarketInfo?>(
-                          stream: collectorETH.run(),
-                          builder: (context, snapshot) {
-                            G.eth.m = snapshot.data;
-                            if (G.eth.m != null) var score = Algo.calculate();
-
-                            return insightView(G.eth);
-                          }),
-                      const Divider(
-                        thickness: 4,
-                      ),
-                      StreamBuilder<MarketInfo?>(
-                          stream: collectorBCH.run(),
-                          builder: (context, snapshot) {
-                            G.btc1.m = snapshot.data;
-                            return insightView(G.btc1);
-                          }),
-                      const Divider(
-                        thickness: 4,
-                      ),
-                      StreamBuilder<MarketInfo?>(
-                          stream: collectorETC.run(),
-                          builder: (context, snapshot) {
-                            G.eth1.m = snapshot.data;
-                            return insightView(G.eth1);
-                          }),
-                      TextButton(
-                          onPressed: () async {
-                            monitoring.value = !monitoring.value;
-                            collectorBTC.stop();
-                            collectorETH.stop();
-                            collectorETC.stop();
-                            collectorBCH.stop();
-                          },
-                          child: const Text('토글 API')),
-                      TextButton(
-                          onPressed: () async {
-                            normalize.value = !normalize.value;
-                          },
-                          child: const Text('노말라이즈 API')),
-                    ]));
-        }),
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () {
-          count++;
-          string.value = '$count $count';
-        },
-      ));
-
-  Widget insightView(CoinInfo? k) {
-    if (k == null) return const Text('Waiting...');
-    return Column(children: [tradeRow(k), kdjRow(k.m), macdRow(k.m)]);
-  }
-
-  Widget tradeRow(CoinInfo? traget) {
-    if (traget!.m == null) return const Text('Waiting...');
-    MarketInfo mi = traget.m as MarketInfo;
-    return Row(
-      children: [
-        Text(traget.m!.symbol.toUpperCase().replaceFirst('USDT', ' ')),
-        traget.position.p == 0
-            ? Row(children: [
-                TextButton(
-                    onPressed: () {
-                      traget.position.p = mi.kListShort!.last.close;
-                      traget.position.buy = true;
-                      traget.position.t = DateTime.now();
-                    },
-                    child: Text(
-                      'BUY',
-                      style: TextStyle(backgroundColor: Colors.green),
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+            child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                      onPressed: () {
+                        if (bRunning.value) {
+                          collectorBTC.stop();
+                          collectorETH.stop();
+                          for (var c in collectorCoins) {
+                            c.stop();
+                          }
+                          AlgoMngr.reset();
+                        } else {
+                          collectorBTC.run().listen((event) {
+                            M.btc = event;
+                            if (event != null) {
+                              btcPrice.value =
+                                  '${event.kListShort!.last.close.toStringAsFixed(2)}  \t${event.kListShort!.last.macd.toStringAsFixed(2)}';
+                              tmpList.value = AlgoMngr.refresh();
+                            }
+                          });
+                          collectorETH.run().listen((event) {
+                            if (event != null) {
+                              M.eth = event;
+                              tmpList.value = AlgoMngr.refresh();
+                            }
+                          });
+                          for (int i = 0; i < collectorCoins.length; ++i) {
+                            collectorCoins[i].run().listen((event) {
+                              if (event != null) {
+                                M.targets[i] = event;
+                                tmpList.value = AlgoMngr.refresh();
+                              }
+                            });
+                          }
+                        }
+                        bRunning.value = !bRunning.value;
+                      },
+                      icon: Obx(() => Icon(
+                          bRunning.value ? Icons.stop : Icons.play_arrow))),
+                ),
+                Obx(() => Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(btcPrice.value),
                     )),
-                TextButton(
-                    onPressed: () {
-                      traget.position.p = mi.kListShort!.last.close;
-                      traget.position.buy = false;
-                      traget.position.t = DateTime.now();
+              ],
+            ),
+            Row(
+              children: [
+                Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: IconButton(
+                        onPressed: () {
+                          tmpList.value = AlgoMngr.refresh();
+                          // tmpList.add(tmpList.length * 2);
+                          // tmpList.removeWhere((element) => true);
+                          // tmpList.addAll(AlgoMngr.summaries);
+                          // tmpList.value = AlgoMngr.overviews;
+                        },
+                        icon: Icon(Icons.calculate)))
+              ],
+            ),
+            Obx((() => Expanded(
+                  child: ListView.separated(
+                    itemCount: tmpList.length,
+                    separatorBuilder: (BuildContext context, int index) {
+                      return Divider();
                     },
-                    child: Text('SELL',
-                        style: TextStyle(backgroundColor: Colors.red)))
-              ])
-            : Row(children: [
-                Text(U.pr(traget.position.p),
-                    style: TextStyle(
-                        backgroundColor:
-                            traget.position.buy ? Colors.green : Colors.red)),
-                TextButton(
-                    onPressed: () {
-                      traget.position.p = 0;
+                    itemBuilder: (BuildContext context, int index) {
+                      return GestureDetector(
+                        onTap: () {
+                          print('tap $index');
+                          showDialog(
+                              context: context,
+                              builder: (c) {
+                                return AlertDialog(
+                                  title: Text(tmpList[index].name),
+                                  scrollable: true,
+                                  content: SizedBox(
+                                    width: 300,
+                                    height: 300,
+                                    child: ListView.separated(
+                                        shrinkWrap: true,
+                                        itemBuilder: ((context, ii) {
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '${M.targets[AlgoMngr.algos[index].summary[ii].index].symbol.toUpperCase()} ${AlgoMngr.algos[index].summary[ii].buy ? '롱' : '숏'}  ${AlgoMngr.algos[index].summary[ii].per.toStringAsFixed(2)}',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AlgoMngr
+                                                                .algos[index]
+                                                                .summary[ii]
+                                                                .per >
+                                                            0
+                                                        ? Colors.green
+                                                        : Colors.red),
+                                              ),
+                                              Text(
+                                                  '${DateFormat('dd)HH:mm:ss').format(AlgoMngr.algos[index].summary[ii].startt)}~${DateFormat('HH:mm:ss').format(AlgoMngr.algos[index].summary[ii].endt)}')
+                                            ],
+                                          );
+                                        }),
+                                        separatorBuilder: ((context, index) =>
+                                            Divider(
+                                              height: 4,
+                                            )),
+                                        itemCount: AlgoMngr
+                                            .algos[index].summary.length),
+                                  ),
+                                );
+                              });
+                        },
+                        child: ListTile(
+                            title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                SizedBox(
+                                    width: 80,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                          top: 2, bottom: 2),
+                                      child: Text(tmpList[index].name,
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold)),
+                                    )),
+                                Text(AlgoMngr.algos[index].position.p == 0
+                                    ? ''
+                                    : '${M.targets[AlgoMngr.algos[index].position.index].symbol} ${AlgoMngr.algos[index].position.buy ? '롱' : '숏'}  ${((AlgoMngr.algos[index].position.buy ? 1 : -1) * ((M.targets[AlgoMngr.algos[index].position.index].kListShort!.last.close - AlgoMngr.algos[index].position.p) * 100 / AlgoMngr.algos[index].position.p)).toStringAsFixed(2)}%')
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  child: Text('승:${tmpList[index].win}',
+                                      style: TextStyle(color: Colors.green)),
+                                ),
+                                SizedBox(
+                                  width: 60,
+                                  child: Text('패:${tmpList[index].lose}',
+                                      style: TextStyle(color: Colors.red)),
+                                ),
+                                Text(
+                                    '수익:${tmpList[index].per.toStringAsFixed(2)}'),
+                              ],
+                            ),
+                          ],
+                        )),
+                      );
                     },
-                    child: Text(' Close',
-                        style: TextStyle(backgroundColor: Colors.grey)))
-              ]),
-        Text(traget.position.p == 0
-            ? ''
-            : '  ${traget.position.buy ? ((mi.kListShort!.last.close - traget.position.p) * 100 / traget.position.p).toStringAsFixed(2) : ((traget.position.p - mi.kListShort!.last.close) * 100 / traget.position.p).toStringAsFixed(2)}')
-      ],
-    );
-  }
-
-  Widget kdjRow(MarketInfo? k) {
-    if (k == null) return const Text('Waiting...');
-    return Row(
-      children: [
-        pV(k.kListShort!.last.close),
-        const Text('KDJ S'),
-        vV(k.kListShort!.last.j!),
-        const Text(' M'),
-        vV(k.kListMed!.last.j!),
-        const Text(' L'),
-        vV(k.kListLong!.last.j!),
-      ],
-    );
-  }
-
-  Widget macd1Row(List<KLineEntity> e) {
-    int len = e.length;
-    double basePrice = normalize.value ? 1000 / e.last.close : 1;
-    return Row(
-      children: [
-        vV2(e[len - 6].macd! * basePrice,
-            (e[len - 6].macd! - e[len - 7].macd!) * 100 / e[len - 6].macd!),
-        vV2(e[len - 5].macd! * basePrice,
-            (e[len - 5].macd! - e[len - 6].macd!) * 100 / e[len - 5].macd!),
-        vV2(e[len - 4].macd! * basePrice,
-            (e[len - 4].macd! - e[len - 5].macd!) * 100 / e[len - 5].macd!),
-        vV2(e[len - 3].macd! * basePrice,
-            (e[len - 3].macd! - e[len - 4].macd!) * 100 / e[len - 3].macd!),
-        vV2(e[len - 2].macd! * basePrice,
-            (e[len - 2].macd! - e[len - 3].macd!) * 100 / e[len - 2].macd!),
-        vV2(e[len - 1].macd! * basePrice,
-            (e[len - 1].macd! - e[len - 2].macd!) * 100 / e[len - 1].macd!),
-      ],
-    );
-  }
-
-  Widget macdRow(MarketInfo? k) {
-    if (k == null) return const Text('Waiting...');
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      macd1Row(k.kListShort!),
-      macd1Row(k.kListMed!),
-      macd1Row(k.kListLong!),
-    ]);
-  }
-
-  Widget pV(double p) {
-    //price View
-    const double boxWidth = 200;
-    return Padding(
-        padding: const EdgeInsets.all(4),
-        child: Text(
-          U.pr(p),
-        ));
-    // return SizedBox(width: boxWidth, child: Center(child: Text(U.pr(p))));
-  }
-
-  Widget vV(double p) {
-    //value View
-    const double boxWidth = 50;
-    return SizedBox(
-        width: boxWidth, child: Center(child: Text(p.toStringAsFixed(2))));
-  }
-
-  Widget vV2(double p, double per) {
-    //value View
-    const double boxWidth = 50;
-    return SizedBox(
-        width: boxWidth,
-        child: Center(
-            child: Column(children: [
-          Text(p.toStringAsFixed(2)),
-          Text(
-            per.toStringAsFixed(2),
-            style: TextStyle(
-                color: per > 0 ? Colors.green : Colors.red, fontSize: 10),
-          )
-        ])));
+                  ),
+                )))
+          ],
+        )));
   }
 }
