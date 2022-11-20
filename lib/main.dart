@@ -3,15 +3,8 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tradeinsight/exif/collector.dart';
 import 'package:tradeinsight/src/algorithm.dart';
-import 'package:tradeinsight/veiws/charttable.dart';
 
-import 'entity/coininfo.dart';
-import 'entity/k_line_entity.dart';
-import 'exif/exapi.dart';
-import 'exif/tradeapi.dart';
 import 'models/global.dart';
-import 'src/algo1.dart';
-import 'utils/strutil.dart';
 
 var collectorBTC = Collector(symbol: 'btcusdt', precision: 2);
 var collectorETH = Collector(symbol: 'ethusdt', precision: 2);

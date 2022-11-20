@@ -11,9 +11,9 @@ class Algo2 extends Algorithm {
   Score calculate() {
     Score s = Score();
 
-    s.targets[0] = (Random().nextInt(200) - 100) * 0.81;
-    s.targets[1] = (Random().nextInt(200) - 100) * 0.81;
-
+    for (int i = 0; i < s.targets.length; ++i) {
+      s.targets[i] = (Random().nextInt(200) - 100) * 0.805;
+    }
     return s;
   }
 }

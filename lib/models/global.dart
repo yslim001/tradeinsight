@@ -11,8 +11,12 @@ class Config {
 
   static int BUYSCORE = 80;
   static int SELLSCORE = -80;
-  static int BUYMSCORE = -80;
-  static int SELLMSCORE = 80;
+  static int BuyCloseScore = -40;
+  static int SellCloseScore = 40;
+}
+
+class Targets {
+  static var coins = ['bchusdt', 'etcusdt', 'ltcusdt'];
 }
 
 class M {
@@ -22,8 +26,9 @@ class M {
 
   M() {
     if (targets.isEmpty) {
-      targets.add(MarketInfo(symbol: 'bchusdt'));
-      targets.add(MarketInfo(symbol: 'etcusdt'));
+      for (var s in Targets.coins) {
+        targets.add(MarketInfo(symbol: s));
+      }
     }
   }
 }

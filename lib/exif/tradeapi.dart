@@ -5,12 +5,12 @@ class Trade {
   static trade(Score sc, PositionInfo pos) {
     if (pos.p != 0) {
       if (pos.buy) {
-        if (sc.targets[pos.index] < Config.BUYMSCORE) {
+        if (sc.targets[pos.index] < Config.BuyCloseScore) {
           //BUY 유지 점수 보다 낮은경우
           sell(pos.index, M.targets[pos.index].kListShort!.last.close, pos);
         }
       } else {
-        if (sc.targets[pos.index] > Config.SELLMSCORE) {
+        if (sc.targets[pos.index] > Config.SellCloseScore) {
           //SELL 유지 점수보다 높은 경우
           buy(pos.index, M.targets[pos.index].kListShort!.last.close, pos);
         }

@@ -7,7 +7,14 @@ import 'algo2.dart';
 import 'algo3.dart';
 
 class Score {
-  List<double> targets = [0, 0];
+  late List<double> targets;
+
+  Score() {
+    targets = <double>[];
+    for (var coin in Targets.coins) {
+      targets.add(0);
+    }
+  }
 
   @override
   String toString() {
@@ -31,7 +38,7 @@ abstract class Algorithm {
     Score sc = calculate();
     if (position.p != 0) {
       if (position.buy) {
-        if (sc.targets[position.index] < Config.BUYMSCORE) {
+        if (sc.targets[position.index] < Config.BuyCloseScore) {
           TradeSummary ts = TradeSummary();
           ts.index = position.index;
           ts.buy = position.buy;
@@ -44,7 +51,7 @@ abstract class Algorithm {
           position.p = 0;
         }
       } else {
-        if (sc.targets[position.index] > Config.SELLMSCORE) {
+        if (sc.targets[position.index] > Config.SellCloseScore) {
           TradeSummary ts = TradeSummary();
           ts.index = position.index;
           ts.buy = position.buy;
@@ -58,7 +65,7 @@ abstract class Algorithm {
         }
       }
     } else {
-      double targetScore = 0;
+      double targetScore = -1;
       int targetIndex = -1;
       for (int i = 0; i < sc.targets.length; ++i) {
         if (sc.targets[i].abs() > targetScore) {
