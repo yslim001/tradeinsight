@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../entity/k_line_entity.dart';
 import '../exif/tradeapi.dart';
 import '../models/global.dart';
 import 'algo1.dart';
@@ -85,6 +86,102 @@ abstract class Algorithm {
         position.t = DateTime.now();
       }
     }
+  }
+
+  bool isBuyCurve(List<KLineEntity> kList, {int cnt = 3, allowDelay = true}) {
+    int len = kList.length;
+    int peakIndex = len - 2;
+    double gap = 0;
+    bool dirok = true;
+
+    //check decreasing
+    for (int i = peakIndex - cnt; i < peakIndex; ++i) {
+      if (kList[i].macd < kList[i + 1].macd) {
+        dirok = false;
+        break;
+      }
+    }
+
+    if (dirok) {
+      gap = (kList[peakIndex - cnt].macd - kList[peakIndex].macd).abs() /
+          (cnt * 2);
+      if (kList[peakIndex].macd < kList[len - 1].macd) {
+        if ((kList[peakIndex].macd - kList[len - 1].macd).abs() > gap) {
+          return true;
+        }
+      }
+    }
+
+    if (!allowDelay) return false;
+
+    peakIndex = len - 3;
+    //check decreasing
+    for (int i = peakIndex - cnt; i < peakIndex; ++i) {
+      if (kList[i].macd < kList[i + 1].macd) {
+        dirok = false;
+        break;
+      }
+    }
+
+    if (dirok) {
+      gap = (kList[peakIndex - cnt].macd - kList[peakIndex].macd).abs() /
+          (cnt * 2);
+      if (kList[peakIndex].macd < kList[len - 1].macd) {
+        if ((kList[peakIndex].macd - kList[len - 1].macd).abs() > gap) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  bool isSellCurve(List<KLineEntity> kList, {int cnt = 3, allowDelay = true}) {
+    int len = kList.length;
+    int peakIndex = len - 2;
+    double gap = 0;
+    bool dirok = true;
+
+    //check increasing
+    for (int i = peakIndex - cnt; i < peakIndex; ++i) {
+      if (kList[i].macd > kList[i + 1].macd) {
+        dirok = false;
+        break;
+      }
+    }
+
+    if (dirok) {
+      gap = (kList[peakIndex - cnt].macd - kList[peakIndex].macd).abs() /
+          (cnt * 2);
+      if (kList[peakIndex].macd > kList[len - 1].macd) {
+        if ((kList[peakIndex].macd - kList[len - 1].macd).abs() > gap) {
+          return true;
+        }
+      }
+    }
+
+    if (!allowDelay) return false;
+
+    peakIndex = len - 3;
+    //check decreasing
+    for (int i = peakIndex - cnt; i < peakIndex; ++i) {
+      if (kList[i].macd > kList[i + 1].macd) {
+        dirok = false;
+        break;
+      }
+    }
+
+    if (dirok) {
+      gap = (kList[peakIndex - cnt].macd - kList[peakIndex].macd).abs() /
+          (cnt * 2);
+      if (kList[peakIndex].macd > kList[len - 1].macd) {
+        if ((kList[peakIndex].macd - kList[len - 1].macd).abs() > gap) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 }
 

@@ -166,7 +166,7 @@ class Home2 extends StatelessWidget {
                                     )),
                                 Text(AlgoMngr.algos[index].position.p == 0
                                     ? ''
-                                    : '${M.targets[AlgoMngr.algos[index].position.index].symbol} ${AlgoMngr.algos[index].position.buy ? '롱' : '숏'}  ${((AlgoMngr.algos[index].position.buy ? 1 : -1) * ((M.targets[AlgoMngr.algos[index].position.index].kListShort!.last.close - AlgoMngr.algos[index].position.p) * 100 / AlgoMngr.algos[index].position.p)).toStringAsFixed(2)}%')
+                                    : '${M.targets[AlgoMngr.algos[index].position.index].symbol} ${AlgoMngr.algos[index].position.buy ? '롱' : '숏'}  ${((AlgoMngr.algos[index].position.buy ? 1 : -1) * ((M.targets[AlgoMngr.algos[index].position.index].kListShort!.last.close - AlgoMngr.algos[index].position.p) * 100 / AlgoMngr.algos[index].position.p)).toStringAsFixed(2)}% ${AlgoMngr.algos[index].position.p.toStringAsFixed(2)}')
                               ],
                             ),
                             Row(
