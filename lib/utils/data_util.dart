@@ -138,7 +138,7 @@ class DataUtil {
   }
 
   static void calcRSI(List<KLineEntity> dataList) {
-    double? rsi;
+    double rsi = -1;
     double rsiABSEma = 0;
     double rsiMaxEma = 0;
     for (int i = 0; i < dataList.length; i++) {
@@ -156,8 +156,8 @@ class DataUtil {
         rsiABSEma = (rAbs + (14 - 1) * rsiABSEma) / 14;
         rsi = (rsiMaxEma / rsiABSEma) * 100;
       }
-      if (i < 13) rsi = null;
-      if (rsi != null && rsi.isNaN) rsi = null;
+      if (i < 13) rsi = -1;
+      if (rsi != null && rsi.isNaN) rsi = -1;
       entity.rsi = rsi;
     }
   }

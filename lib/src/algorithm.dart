@@ -183,6 +183,11 @@ abstract class Algorithm {
 
     return false;
   }
+
+  double jChange(List<KLineEntity> kList) {
+    int len = kList.length;
+    return kList[len - 2].j! - kList[len - 1].j!;
+  }
 }
 
 class AlgoMngr {

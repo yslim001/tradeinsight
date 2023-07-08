@@ -26,14 +26,14 @@ class Collector {
   double slotVol1m = 0;
 
   late String _klineSymbol;
-  late String _tradeSymbol;
-  late String _orderSymbol;
+  // late String _tradeSymbol;
+  // late String _orderSymbol;
 
   late List<KLineEntity> kListShort;
   late List<KLineEntity> kListMed;
   late List<KLineEntity> kListLong;
-  OrderBookInfo? _ordbookInfo;
-  final List<TradeInfo> _trList = [];
+  // OrderBookInfo? _ordbookInfo;
+  // final List<TradeInfo> _trList = [];
 
   Collector({required this.symbol, required this.precision});
 
@@ -41,7 +41,7 @@ class Collector {
     print('Target: $symbol');
     bRunning = true;
     _klineSymbol = '${symbol.toLowerCase()}@kline_1m';
-    _tradeSymbol = '${symbol.toLowerCase()}@aggTrade';
+    // _tradeSymbol = '${symbol.toLowerCase()}@aggTrade';
 
     kListShort = await BNCF.getKline(symbol, Config.SHORT);
     kListMed = await BNCF.getKline(symbol, Config.MED);
@@ -65,8 +65,8 @@ class Collector {
     print('price:${kListMed!.last.close}');
     print('==================================================================');
 
-    _channel = WebSocketChannel.connect(Uri.parse(
-        'wss://fstream.binance.com/stream?streams=$_tradeSymbol/$_klineSymbol'));
+    _channel = WebSocketChannel.connect(
+        Uri.parse('wss://fstream.binance.com/stream?streams=$_klineSymbol'));
     int startTime = DateTime.now().millisecondsSinceEpoch;
     yield* _channel.stream.asyncMap((message) {
       // print('received!\n$message');
@@ -74,18 +74,15 @@ class Collector {
 
       fillData(jdata);
 
-      if (_trList.isEmpty) {
-        return null;
-      }
       MarketInfo ds = MarketInfo(symbol: symbol)
         ..symbol = symbol
         ..kListShort = kListShort
         ..kListMed = kListMed
-        ..kListLong = kListLong
-        ..trList = _trList
-        ..ordbookInfo = _ordbookInfo;
+        ..kListLong = kListLong;
+      // ..trList = _trList
+      // ..ordbookInfo = _ordbookInfo;
 
-      if (_trList.last.time > startTime + _monitorDuration * 1000) stop();
+      if (kListShort.last.time! > startTime + _monitorDuration * 1000) stop();
       return ds;
     });
   }
@@ -110,68 +107,55 @@ class Collector {
       DataUtil.calculate(kListShort);
       // print(
       //     'K ${DateFormat('HHmmss:SSS').format(DateTime.fromMillisecondsSinceEpoch(kListShort.last.time))},${kListShort.last.close.toString()}');
-    } else if (type == _tradeSymbol) {
-      double volscale = 2;
-      TradeInfo _trdInfo = TradeInfo()
-        ..id = kdata['a']
-        ..buy = !kdata['m']
-        ..price = double.parse(kdata['p'])
-        ..vol = double.parse(kdata['q'])
-        ..time = kdata['T'];
-      if (_trList.isEmpty) {
-        _trList.add(_trdInfo);
-      } else if (_trList.last.id != _trdInfo.id) {
-        _trList.add(_trdInfo);
-        int lastTime = _trdInfo.time;
-
-        _trList.removeWhere((element) {
-          if (element.time < lastTime - TIMEWINDOW) {
-            return true;
-          } else {
-            return false;
-          }
-        });
-
-        // for (int i = 0; i < _trList.length; ++i) {
-        //   _trdSummary.vol += _trList[i].buy ? _trList[i].vol : -_trList[i].vol;
-        // }
-        // _trdSummary.price = _trList.last.price - _trList[0].price;
-        // _trdSummary.dur = TIMEWINDOW;
-        // if (_trdSummary.vol.abs() >
-        //     _kListShort.last.MA10Volume * volscale / (60000 / TIMEWINDOW)) {
-        //   print(_trList.last.price.toStringAsFixed(2) +
-        //       ' ' +
-        //       _trdSummary.toString() +
-        //       ' v:' +
-        //       _kListShort.last.MA10Volume.toStringAsFixed(3) +
-        //       ' ' +
-        //       _trList.length.toString());
-        //   _trList = [];
-        // }
-      }
-
-      // print(
-      //     'T ${DateFormat('HHmmss:SSS').format(DateTime.fromMillisecondsSinceEpoch(_trList.last.time))},${_trList.last.price.toString()}');
-
-      return;
-    } else if (type == _orderSymbol) {
-      // _ordbookInfo = OrderBookInfo();
-      // List tmp = kdata['b'];
-      // _ordbookInfo.bPrice = double.parse(tmp[0][0]);
-      // _ordbookInfo.bVolSum = 0;
-      // tmp.forEach((element) {
-      //   _ordbookInfo.bVolSum += double.parse(element[1]);
-      // });
-      // tmp = kdata['a'];
-      // _ordbookInfo.sPrice = double.parse(tmp[0][0]);
-      // _ordbookInfo.sVolSum = 0;
-      // tmp.forEach((element) {
-      //   _ordbookInfo.sVolSum += double.parse(element[1]);
-      // });
     } else {
       print(
           'KNOWN FORMAT@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n $streamData');
     }
+    // else if (type == _tradeSymbol) {
+    //   double volscale = 2;
+    //   TradeInfo _trdInfo = TradeInfo()
+    //     ..id = kdata['a']
+    //     ..buy = !kdata['m']
+    //     ..price = double.parse(kdata['p'])
+    //     ..vol = double.parse(kdata['q'])
+    //     ..time = kdata['T'];
+    //   if (_trList.isEmpty) {
+    //     _trList.add(_trdInfo);
+    //   } else if (_trList.last.id != _trdInfo.id) {
+    //     _trList.add(_trdInfo);
+    //     int lastTime = _trdInfo.time;
+
+    //     _trList.removeWhere((element) {
+    //       if (element.time < lastTime - TIMEWINDOW) {
+    //         return true;
+    //       } else {
+    //         return false;
+    //       }
+    //     });
+
+    //     // for (int i = 0; i < _trList.length; ++i) {
+    //     //   _trdSummary.vol += _trList[i].buy ? _trList[i].vol : -_trList[i].vol;
+    //     // }
+    //     // _trdSummary.price = _trList.last.price - _trList[0].price;
+    //     // _trdSummary.dur = TIMEWINDOW;
+    //     // if (_trdSummary.vol.abs() >
+    //     //     _kListShort.last.MA10Volume * volscale / (60000 / TIMEWINDOW)) {
+    //     //   print(_trList.last.price.toStringAsFixed(2) +
+    //     //       ' ' +
+    //     //       _trdSummary.toString() +
+    //     //       ' v:' +
+    //     //       _kListShort.last.MA10Volume.toStringAsFixed(3) +
+    //     //       ' ' +
+    //     //       _trList.length.toString());
+    //     //   _trList = [];
+    //     // }
+    //   }
+
+    //   print(
+    //       'T ${DateFormat('HHmmss:SSS').format(DateTime.fromMillisecondsSinceEpoch(_trList.last.time))},${_trList.last.price.toString()}');
+
+    //   return;
+    // }
   }
 
   static void printTr(List<TradeInfo> tr) {

@@ -20,8 +20,8 @@ class Targets {
 }
 
 class M {
-  static MarketInfo? btc;
-  static MarketInfo? eth;
+  static MarketInfo btc = MarketInfo(symbol: 'btcusdt');
+  static MarketInfo eth = MarketInfo(symbol: 'ethusdt');
   static List<MarketInfo> targets = [];
 
   M() {
@@ -73,8 +73,8 @@ class MarketInfo {
   List<KLineEntity>? kListShort;
   List<KLineEntity>? kListMed;
   List<KLineEntity>? kListLong;
-  OrderBookInfo? ordbookInfo;
-  List<TradeInfo>? trList;
+  // OrderBookInfo? ordbookInfo;
+  // List<TradeInfo>? trList;
 
   MarketInfo({required this.symbol});
 }
@@ -83,3 +83,5 @@ class CoinInfo {
   late MarketInfo? m;
   PositionInfo position = PositionInfo(buy: true, p: 0);
 }
+
+//MACD 1M, 1H, 
